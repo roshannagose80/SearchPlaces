@@ -13,6 +13,7 @@ import GoogleMaps
 
 class DetailsViewController: UIViewController,CLLocationManagerDelegate {
     
+    @IBOutlet weak var titleLabel: UILabel!
     var locationManager = CLLocationManager()
     var currentLocation: CLLocation?
     var mapView: GMSMapView!
@@ -20,10 +21,21 @@ class DetailsViewController: UIViewController,CLLocationManagerDelegate {
     var zoomLevel: Float = 15.0
     var selectedPlace: GMSPlace?
     
+    var photoScrollView:UIScrollView!
+    var photoCollectionView:UICollectionView!
+    
+    var photoItems:NSMutableArray!
+    
+    var fullImageView:UIImageView!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
         // Do any additional setup after loading the view.
+        
+        titleLabel.text = selectedPlace?.name
+        
+        self.photoItems = NSMutableArray()
         
         locationManager = CLLocationManager()
         locationManager.requestWhenInUseAuthorization()
@@ -36,14 +48,13 @@ class DetailsViewController: UIViewController,CLLocationManagerDelegate {
         placesClient = GMSPlacesClient.shared()
         
         // add map
-        
         let camera = GMSCameraPosition.camera(withLatitude: (selectedPlace?.coordinate.latitude)!,
                                               longitude: (selectedPlace?.coordinate.longitude)!,
                                               zoom: zoomLevel)
         
         
         
-        mapView = GMSMapView.map(withFrame: CGRect(x: Double(view.bounds.origin.x), y:64, width: Double(view.bounds.size.width), height: Double(view.bounds.size.height)*3/4), camera: camera)
+        mapView = GMSMapView.map(withFrame: CGRect(x: Double(view.bounds.origin.x), y:64, width: Double(view.bounds.size.width), height: Double(view.bounds.size.height)*3/4-64), camera: camera)
         mapView.settings.myLocationButton = true
         mapView.settings.compassButton = true
         mapView.settings.consumesGesturesInView = true
@@ -54,7 +65,35 @@ class DetailsViewController: UIViewController,CLLocationManagerDelegate {
         
         // Add the map to the view, hide it until we've got a location update.
         view.addSubview(mapView)
-        mapView.isHidden = true
+        
+        //mapView.isHidden = true
+        
+        photoScrollView = UIScrollView(frame: CGRect(x: Double(view.bounds.origin.x), y:Double(mapView.frame.origin.y + mapView.frame.size.height), width: Double(view.bounds.size.width), height: Double(view.bounds.size.height)*1/4))
+        photoScrollView.contentSize = CGSize(width: photoScrollView.frame.size.width, height: photoScrollView.frame.size.height)
+        
+        photoScrollView.backgroundColor = UIColor.red
+        view.addSubview(photoScrollView)
+        
+        
+        let flowLayout:UICollectionViewFlowLayout = UICollectionViewFlowLayout()
+        
+        flowLayout.scrollDirection = .horizontal
+        flowLayout.itemSize = CGSize(width:150, height: photoScrollView.frame.size.height)
+        
+        photoCollectionView = UICollectionView(frame: CGRect(x:0, y:0, width: photoScrollView.frame.size.width, height: photoScrollView.frame.size.height), collectionViewLayout: flowLayout)
+        
+        photoCollectionView.backgroundColor = UIColor.white
+        photoCollectionView.showsVerticalScrollIndicator = false
+        photoCollectionView.showsHorizontalScrollIndicator = false
+        photoScrollView.addSubview(photoCollectionView)
+        
+        photoCollectionView.register(UINib.init(nibName: "PhotoCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: "PhotoCollectionViewCell")
+        photoCollectionView.dataSource = self
+        photoCollectionView.delegate = self
+        
+        photoScrollView.isScrollEnabled = false;
+        
+        loadAllPhotoForPlace(placeID: (selectedPlace?.placeID)!)
         
     }
     
@@ -87,7 +126,6 @@ class DetailsViewController: UIViewController,CLLocationManagerDelegate {
         }
     }
     
-    // Handle authorization for the location manager.
     func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
         switch status {
         case .restricted:
@@ -114,4 +152,87 @@ class DetailsViewController: UIViewController,CLLocationManagerDelegate {
         
         self.dismiss(animated: true, completion: nil)
     }
+    
+    func loadAllPhotoForPlace(placeID: String) {
+        
+        GMSPlacesClient.shared().lookUpPhotos(forPlaceID: placeID) { (photos, error) -> Void in
+            if let error = error {
+                
+                // TODO: handle the error.
+                print("Error: \(error.localizedDescription)")
+            } else {
+                
+                // use DispatchGroup for fetch all photos
+                
+                let group = DispatchGroup()
+                
+                photos?.results.forEach({ (metaData) in
+                    group.enter()
+                    GMSPlacesClient.shared().loadPlacePhoto(metaData, callback: {
+                        (photo, error) -> Void in
+                        if let error = error {
+                            
+                            // TODO: handle the error.
+                            print("Error: \(error.localizedDescription)")
+                        } else {
+                            
+                            self.photoItems.add(photo ?? UIImage())
+                        }
+                        
+                        group.leave()
+                    })
+                })
+                
+                // notify when all task finished
+                group.notify(queue: DispatchQueue.global(qos: .background)) {
+                    
+                    // load all photos
+                    DispatchQueue.main.async {
+                        self.photoCollectionView.reloadData()
+                    }
+                }
+                
+                
+            }
+        }
+    }
+    
+}
+
+extension DetailsViewController: UICollectionViewDataSource, UICollectionViewDelegate {
+    
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        return self.photoItems.count
+    }
+    
+    func numberOfSections(in collectionView: UICollectionView) -> Int {
+        return 1
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "PhotoCollectionViewCell", for: indexPath) as! PhotoCollectionViewCell
+      
+        if let image = self.photoItems.object(at: indexPath.row) as? UIImage{
+            
+            cell.locationImageView.image = image
+        }
+        
+        return cell
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        let cell = collectionView.cellForItem(at: indexPath) as! PhotoCollectionViewCell
+        
+        if let image = cell.locationImageView.image {
+            
+            let vc : PhotoDetailsViewController = self.storyboard?.instantiateViewController(withIdentifier: String(describing: PhotoDetailsViewController.self)) as! PhotoDetailsViewController
+            vc.selectedImage = image
+            
+            self.present(vc, animated: true, completion: nil)
+            
+        } else {
+            print("no photo")
+        }
+    }
+    
 }

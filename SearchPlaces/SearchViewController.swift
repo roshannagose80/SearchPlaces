@@ -68,6 +68,7 @@ class SearchViewController: UIViewController, UISearchBarDelegate, UISearchContr
         searchController = UISearchController(searchResultsController: resultsTableController)
         searchController.searchResultsUpdater = resultsTableController
         searchController.searchBar.sizeToFit()
+        searchController.searchBar.placeholder = "Search Places"
         placeTableView.tableHeaderView = searchController.searchBar
         
         searchController.delegate = self
@@ -99,12 +100,11 @@ class SearchViewController: UIViewController, UISearchBarDelegate, UISearchContr
                            didAutocompleteWith place: GMSPlace) {
         searchController?.isActive = false
         // Do something with the selected place.
-        print("Place name: \(place.name)")
-        print("Place address: \(place.formattedAddress)")
-        print("Place attributions: \(place.attributions)")
-        
-        //resultsController.dismiss(animated: true, completion: nil)
-        
+//        print("Place name: \(place.name)")
+//        print("Place address: \(place.formattedAddress)")
+//        print("Place attributions: \(place.attributions)")
+//        
+       
         let vc : DetailsViewController = self.storyboard?.instantiateViewController(withIdentifier: String(describing: DetailsViewController.self)) as! DetailsViewController
         
         vc.selectedPlace = place
@@ -179,7 +179,7 @@ class SearchViewController: UIViewController, UISearchBarDelegate, UISearchContr
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 5;
+        return 0;
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
