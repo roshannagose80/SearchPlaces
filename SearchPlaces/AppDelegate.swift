@@ -25,8 +25,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         if kMapsAPIKey.isEmpty {
             
             let bundleId = Bundle.main.bundleIdentifier!
-            let msg = "Configure API keys inside Appdelegate.swift for your  bundle `\(bundleId)`, " +
-            "see README.GooglePlacesClone for more information"
+            let msg = "Configure API keys inside Appdelegate.swift for your  bundle `\(bundleId)'"
             print(msg)
         }
 

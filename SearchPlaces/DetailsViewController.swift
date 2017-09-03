@@ -10,6 +10,7 @@ import UIKit
 import CoreLocation
 import GooglePlaces
 import GoogleMaps
+import CoreData
 
 class DetailsViewController: UIViewController,CLLocationManagerDelegate {
     
@@ -19,7 +20,7 @@ class DetailsViewController: UIViewController,CLLocationManagerDelegate {
     var mapView: GMSMapView!
     var placesClient: GMSPlacesClient!
     var zoomLevel: Float = 15.0
-    var selectedPlace: GMSPlace?
+    var selectedPlace: NSManagedObject?
     
     var photoScrollView:UIScrollView!
     var photoCollectionView:UICollectionView!
@@ -33,7 +34,7 @@ class DetailsViewController: UIViewController,CLLocationManagerDelegate {
         
         // Do any additional setup after loading the view.
         
-        titleLabel.text = selectedPlace?.name
+        titleLabel.text = selectedPlace?.value(forKeyPath: "name") as? String
         
         self.photoItems = NSMutableArray()
         
@@ -48,8 +49,8 @@ class DetailsViewController: UIViewController,CLLocationManagerDelegate {
         placesClient = GMSPlacesClient.shared()
         
         // add map
-        let camera = GMSCameraPosition.camera(withLatitude: (selectedPlace?.coordinate.latitude)!,
-                                              longitude: (selectedPlace?.coordinate.longitude)!,
+        let camera = GMSCameraPosition.camera(withLatitude: (selectedPlace?.value(forKeyPath: "latitude") as? Double)!,
+                                              longitude: (selectedPlace?.value(forKeyPath: "longitude") as? Double)!,
                                               zoom: zoomLevel)
         
         
@@ -93,7 +94,7 @@ class DetailsViewController: UIViewController,CLLocationManagerDelegate {
         
         photoScrollView.isScrollEnabled = false;
         
-        loadAllPhotoForPlace(placeID: (selectedPlace?.placeID)!)
+        loadAllPhotoForPlace(placeID: (selectedPlace?.value(forKeyPath: "placeId") as? String)!)
         
     }
     
@@ -109,13 +110,13 @@ class DetailsViewController: UIViewController,CLLocationManagerDelegate {
         let location: CLLocation = locations.last!
         print("Location: \(location)")
         
-        let camera = GMSCameraPosition.camera(withLatitude: (selectedPlace?.coordinate.latitude)!,
-                                              longitude: (selectedPlace?.coordinate.longitude)!,
+        let camera = GMSCameraPosition.camera(withLatitude: (selectedPlace?.value(forKeyPath: "latitude") as? Double)!,
+                                              longitude: (selectedPlace?.value(forKeyPath: "longitude") as? Double)!,
                                               zoom: zoomLevel)
         
-        let position = CLLocationCoordinate2D(latitude: (selectedPlace?.coordinate.latitude)!, longitude: (selectedPlace?.coordinate.longitude)!)
+        let position = CLLocationCoordinate2D(latitude: (selectedPlace?.value(forKeyPath: "latitude") as? Double)!, longitude: (selectedPlace?.value(forKeyPath: "longitude") as? Double)!)
         let marker = GMSMarker(position: position)
-        marker.title = selectedPlace?.name
+        marker.title = selectedPlace?.value(forKeyPath: "name") as? String
         marker.map = mapView
         
         if mapView.isHidden {

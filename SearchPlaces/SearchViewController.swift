@@ -10,57 +10,36 @@ import UIKit
 import CoreLocation
 import GooglePlaces
 import GoogleMaps
-
+import CoreData
 import UIKit
 import GooglePlaces
 
 
-class SearchViewController: UIViewController, UISearchBarDelegate, UISearchControllerDelegate, UISearchResultsUpdating,GMSAutocompleteResultsViewControllerDelegate,UITableViewDelegate,UITableViewDataSource  {
-    
-    /// State restoration values.
-    enum RestorationKeys : String {
-        case viewControllerTitle
-        case searchControllerIsActive
-        case searchBarText
-        case searchBarIsFirstResponder
-    }
-    
-    var locationManager = CLLocationManager()
-    
-    struct SearchControllerRestorableState {
-        var wasActive = false
-        var wasFirstResponder = false
-    }
+class SearchViewController: UIViewController {
     
     // MARK: - Properties
     
-    /// Data model for the table view.
-    var products = [String]()
-    
-    /*
-     The following 2 properties are set in viewDidLoad(),
-     They are implicitly unwrapped optionals because they are used in many other places throughout this view controller.
-     */
+    var places: [NSManagedObject] = []
     
     /// Search controller to help us with filtering.
     var searchController: UISearchController!
     
     /// Secondary search results table view.
     var resultsTableController: GMSAutocompleteResultsViewController!
-    
-    /// Restoration state for UISearchController
-    var restoredState = SearchControllerRestorableState()
-    
+
+    let managedContext =
+        (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     
     @IBOutlet weak var placeTableView: UITableView!
+    
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
         // Do any additional setup after loading the view.
         
-        locationManager = CLLocationManager()
-        locationManager.requestWhenInUseAuthorization()
-        
+        reloadPlacesData()
+       
         self.title = "Search Places"
         resultsTableController = GMSAutocompleteResultsViewController()
         resultsTableController?.delegate = self
@@ -70,16 +49,9 @@ class SearchViewController: UIViewController, UISearchBarDelegate, UISearchContr
         searchController.searchBar.sizeToFit()
         searchController.searchBar.placeholder = "Search Places"
         placeTableView.tableHeaderView = searchController.searchBar
-        
-        searchController.delegate = self
         searchController.dimsBackgroundDuringPresentation = false // default is YES
         searchController.searchBar.delegate = self    // so we can monitor text changes + others
         
-        /*
-         Search is now just presenting a view controller. As such, normal view controller
-         presentation semantics apply. Namely that presentation will walk up the view controller
-         hierarchy until it finds the root view controller or one that defines a presentation context.
-         */
         definesPresentationContext = true
         
         
@@ -90,26 +62,92 @@ class SearchViewController: UIViewController, UISearchBarDelegate, UISearchContr
         // Dispose of any resources that can be recreated.
     }
     
-    @IBAction func cancelButtonAction(_ sender: Any) {
+    func reloadPlacesData(){
         
-        self.navigationController?.popViewController(animated: true)
+        let fetchRequest =
+            NSFetchRequest<NSManagedObject>(entityName: "Place")
         
+        let sort = NSSortDescriptor(key:"date", ascending: false)
+        fetchRequest.sortDescriptors = [sort]
+        
+        do {
+            places = try managedContext.fetch(fetchRequest)
+            
+            DispatchQueue.main.async {
+                self.placeTableView.reloadData()
+            }
+            
+        } catch let error as NSError {
+            print("Could not save. \(error), \(error.userInfo)")
+        }
+
     }
+    
+}
+extension SearchViewController: UISearchBarDelegate, GMSAutocompleteResultsViewControllerDelegate {
     
     func resultsController(_ resultsController: GMSAutocompleteResultsViewController,
                            didAutocompleteWith place: GMSPlace) {
+        
         searchController?.isActive = false
-        // Do something with the selected place.
-//        print("Place name: \(place.name)")
-//        print("Place address: \(place.formattedAddress)")
-//        print("Place attributions: \(place.attributions)")
-//        
-       
+        
+        let entity =
+            NSEntityDescription.entity(forEntityName: "Place",
+                                       in: managedContext)!
+        
+        let placeManagedObject = NSManagedObject(entity: entity,
+                                                 insertInto: managedContext)
+        placeManagedObject.setValue(place.name, forKeyPath: "name")
+        
+        placeManagedObject.setValue(place.coordinate.latitude, forKeyPath: "latitude")
+        
+        placeManagedObject.setValue(place.coordinate.longitude, forKeyPath: "longitude")
+        
+        placeManagedObject.setValue(place.placeID, forKeyPath: "placeId")
+        
+        placeManagedObject.setValue(NSDate(), forKeyPath: "date")
+
+        
+        if !placeIdExists(placeId:place.placeID) {
+         
+            do {
+                
+                try managedContext.save()
+                self.reloadPlacesData()
+            } catch let error as NSError {
+                print("Could not save. \(error), \(error.userInfo)")
+            }
+        }
+        
         let vc : DetailsViewController = self.storyboard?.instantiateViewController(withIdentifier: String(describing: DetailsViewController.self)) as! DetailsViewController
         
-        vc.selectedPlace = place
+        
+        vc.selectedPlace = placeManagedObject
         
         self.present(vc, animated: true, completion: nil)
+    }
+    
+    func placeIdExists (placeId:String) -> Bool {
+        
+        let request =
+            NSFetchRequest<NSManagedObject>(entityName: "Place")
+        
+        let predicate = NSPredicate(format: "placeId == %@", argumentArray: [placeId])
+        
+        request.predicate = predicate
+        
+        do {
+            let count = try managedContext.count(for:request)
+            
+            if (count <= 1) {
+                return false
+            }
+            
+        } catch let error as NSError {
+            print("Could not save. \(error), \(error.userInfo)")
+        }
+
+        return true
     }
     
     func resultsController(_ resultsController: GMSAutocompleteResultsViewController,
@@ -127,62 +165,23 @@ class SearchViewController: UIViewController, UISearchBarDelegate, UISearchContr
         UIApplication.shared.isNetworkActivityIndicatorVisible = false
     }
     
-    
-    
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-        
-        // Restore the searchController's active state.
-        if restoredState.wasActive {
-            searchController.isActive = restoredState.wasActive
-            restoredState.wasActive = false
-            
-            if restoredState.wasFirstResponder {
-                searchController.searchBar.becomeFirstResponder()
-                restoredState.wasFirstResponder = false
-            }
-        }
-    }
-    
     // MARK: - UISearchBarDelegate
     
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
         searchBar.resignFirstResponder()
     }
     
-    // MARK: - UISearchControllerDelegate
-    
-    func presentSearchController(_ searchController: UISearchController) {
-        //debugPrint("UISearchControllerDelegate invoked method: \(__FUNCTION__).")
-    }
-    
-    func willPresentSearchController(_ searchController: UISearchController) {
-        //debugPrint("UISearchControllerDelegate invoked method: \(__FUNCTION__).")
-    }
-    
-    func didPresentSearchController(_ searchController: UISearchController) {
-        //debugPrint("UISearchControllerDelegate invoked method: \(__FUNCTION__).")
-    }
-    
-    func willDismissSearchController(_ searchController: UISearchController) {
-        //debugPrint("UISearchControllerDelegate invoked method: \(__FUNCTION__).")
-    }
-    
-    func didDismissSearchController(_ searchController: UISearchController) {
-        //debugPrint("UISearchControllerDelegate invoked method: \(__FUNCTION__).")
-    }
-    
-    // MARK: - UISearchResultsUpdating
-    
-    func updateSearchResults(for searchController: UISearchController) {
-        
-    }
-    
+}
+
+extension SearchViewController: UITableViewDelegate,UITableViewDataSource  {
+
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 0;
+        return places.count;
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        
+        let place = places[indexPath.row]
         
         var cell = tableView.dequeueReusableCell(withIdentifier: "Cell")
         
@@ -190,25 +189,23 @@ class SearchViewController: UIViewController, UISearchBarDelegate, UISearchContr
             cell = UITableViewCell(style: UITableViewCellStyle.default, reuseIdentifier: "Cell")
         }
         
-        cell!.textLabel?.text = "Row Name : \(indexPath.row)"
+        cell?.textLabel?.text =
+            place.value(forKeyPath: "name") as? String
         return cell!
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        //        let selectedProduct: Product
-        //
-        //        // Check to see which table view cell was selected.
-        if tableView === self.placeTableView {
-            // My Place
-        }
-        else {
-            // Google Place
-        }
-        //
-        //        // Set up the detail view controller to show.
-        //        let detailViewController = DetailViewController.detailViewControllerForProduct(selectedProduct)
-        //
-        //        navigationController?.pushViewController(detailViewController, animated: true)
+        
+        placeTableView.deselectRow(at: indexPath, animated: false)
+        
+        let placeManagedObject = places[indexPath.row]
+
+        let vc : DetailsViewController = self.storyboard?.instantiateViewController(withIdentifier: String(describing: DetailsViewController.self)) as! DetailsViewController
+        
+        vc.selectedPlace = placeManagedObject
+        
+        self.present(vc, animated: true, completion: nil)
+        
     }
     
 }

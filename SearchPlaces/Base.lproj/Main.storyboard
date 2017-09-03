@@ -13,7 +13,7 @@
         <scene sceneID="NGd-Ca-Qtr">
             <objects>
                 <navigationController id="YZ2-17-xPF" sceneMemberID="viewController">
-                    <navigationBar key="navigationBar" contentMode="scaleToFill" misplaced="YES" id="OMx-Lg-RGC">
+                    <navigationBar key="navigationBar" contentMode="scaleToFill" id="OMx-Lg-RGC">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="44"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </navigationBar>
@@ -78,9 +78,9 @@
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="CXO-54-Fuo">
                                 <rect key="frame" x="0.0" y="0.0" width="375" height="64"/>
                                 <subviews>
-                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="1Yx-qX-0rK">
-                                        <rect key="frame" x="68" y="31" width="250" height="21"/>
-                                        <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="1Yx-qX-0rK">
+                                        <rect key="frame" x="68" y="31" width="250" height="0.0"/>
+                                        <fontDescription key="fontDescription" type="system" weight="medium" pointSize="17"/>
                                         <nil key="textColor"/>
                                         <nil key="highlightedColor"/>
                                     </label>
@@ -90,7 +90,7 @@
                                             <constraint firstAttribute="width" constant="46" id="l9j-7X-fWG"/>
                                             <constraint firstAttribute="height" constant="30" id="n5x-ek-Lte"/>
                                         </constraints>
-                                        <fontDescription key="fontDescription" type="system" weight="medium" pointSize="18"/>
+                                        <fontDescription key="fontDescription" type="system" weight="medium" pointSize="17"/>
                                         <state key="normal" title="Done"/>
                                         <connections>
                                             <action selector="doneButtonAction:" destination="cUE-OP-cbP" eventType="touchUpInside" id="lx1-RS-TS8"/>
@@ -144,7 +144,7 @@
                                             <constraint firstAttribute="height" constant="30" id="a2v-JW-nSL"/>
                                             <constraint firstAttribute="width" constant="62" id="wjs-WA-tsr"/>
                                         </constraints>
-                                        <fontDescription key="fontDescription" type="system" weight="medium" pointSize="18"/>
+                                        <fontDescription key="fontDescription" type="system" weight="medium" pointSize="17"/>
                                         <state key="normal" title="Cancel"/>
                                         <connections>
                                             <action selector="cancelButtonAction:" destination="V8o-gE-mDi" eventType="touchUpInside" id="N8A-6H-oDK"/>
@@ -156,7 +156,7 @@
                                             <constraint firstAttribute="height" constant="30" id="7mX-ka-wtf"/>
                                             <constraint firstAttribute="width" constant="51" id="lyh-fV-jlL"/>
                                         </constraints>
-                                        <fontDescription key="fontDescription" type="system" weight="medium" pointSize="18"/>
+                                        <fontDescription key="fontDescription" type="system" weight="medium" pointSize="17"/>
                                         <state key="normal" title="Save"/>
                                         <connections>
                                             <action selector="saveButtonAction:" destination="V8o-gE-mDi" eventType="touchUpInside" id="nHN-p0-0ua"/>
