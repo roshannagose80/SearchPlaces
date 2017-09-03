@@ -24,31 +24,31 @@ class PhotoDetailsViewController: UIViewController {
             fullImageView.image = selectedImage
         }
         
-        func fetchAssetCollectionForAlbum() -> PHAssetCollection! {
-            
-            let fetchOptions = PHFetchOptions()
-            fetchOptions.predicate = NSPredicate(format: "title = %@", "Search Places")
-            let collection = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: fetchOptions)
-            
-            if let _: AnyObject = collection.firstObject {
-                return collection.firstObject!
-            }
-            
-            return nil
-        }
-        
-        if let assetCollection = fetchAssetCollectionForAlbum() {
-            self.assetCollection = assetCollection
-            return
-        }
-        
-        PHPhotoLibrary.shared().performChanges({
-            PHAssetCollectionChangeRequest.creationRequestForAssetCollection(withTitle: "Search Places")
-        }) { success, _ in
-            if success {
-                self.assetCollection = fetchAssetCollectionForAlbum()
-            }
-        }
+//        func fetchAssetCollectionForAlbum() -> PHAssetCollection! {
+//            
+//            let fetchOptions = PHFetchOptions()
+//            fetchOptions.predicate = NSPredicate(format: "title = %@", "Search Places")
+//            let collection = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: fetchOptions)
+//            
+//            if let _: AnyObject = collection.firstObject {
+//                return collection.firstObject!
+//            }
+//            
+//            return nil
+//        }
+//        
+//        if let assetCollection = fetchAssetCollectionForAlbum() {
+//            self.assetCollection = assetCollection
+//            return
+//        }
+//        
+//        PHPhotoLibrary.shared().performChanges({
+//            PHAssetCollectionChangeRequest.creationRequestForAssetCollection(withTitle: "Search Places")
+//        }) { success, _ in
+//            if success {
+//                self.assetCollection = fetchAssetCollectionForAlbum()
+//            }
+//        }
         
     }
 
